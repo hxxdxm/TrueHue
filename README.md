@@ -2,387 +2,84 @@
   <img src="docs/images/banner.png" alt="TrueHue — 조명에 속지 않는 색 이름 감별기" width="820">
 </p>
 
-# TrueHue — 조명에 속지 않는 색 이름 감별기
-
-> 사진 속 **조명 색을 먼저 추정해 지운 뒤** 색 이름을 붙인다.
-> 공개 데이터셋 봉인 평가에서 색 이름 정답률 **72.2% → 85.1% (+12.9%p)**, 따뜻한 조명에서는 **49.3% → 81.2%**.
-
 <p align="center">
-  <img src="docs/images/demo_live.gif" alt="실시간 카메라 시연: 보정 전 파랑으로 보이던 흰 종이가 보정 후 회색, 흰 종이 기준으로 흰색, 빨간 통은 진한 빨강" width="820">
+  <b>조명 색을 먼저 추정해 지운 뒤 색 이름을 붙이는 감별기</b><br>
+  <sub>KH정보교육원 교과 9 머신비전 미니 프로젝트 · 1조 심준형 · 김하민 · 2026.10.27 ~</sub>
 </p>
 
-<p align="center"><sub>
-③ 실시간 카메라(폰 IP Webcam, 화이트 밸런스를 전구색으로 고정해 일부러 푸르게 찍음) —
-① 보정 전: 흰 종이가 <b>파랑</b>으로 보임 → ② 자동 보정(Shades of Gray): <b>회색</b> ·
-③ 흰 종이로 맞추기: <b>흰색</b> → ④ 빨간 통: <b>진한 빨강</b>
-</sub></p>
-
-| 항목 | 내용 |
-|---|---|
-| 기간 · 팀 | 2026-10-27 ~ (진행 중) · KH정보교육원 교과 9 머신비전 미니 프로젝트 · 1조 심준형 · 김하민 |
-| 핵심 결과 | Gehler-Shi 봉인 평가용 378장 · 8,240칸, 색 이름 정답률 **85.1%** (기준선 72.2%, 차이 +12.9%p [95% 구간 +10.7, +15.1]) |
-| 방법 | 학습 없는 고전 영상처리 — 조명 추정(Gray World · White Patch · **Shades of Gray**) → 카메라 색 변환 → CIELAB → 11색 이름 규칙 |
-| 기술 | Python · NumPy · OpenCV · colour-science · pandas · FastAPI |
-| 데이터 | Gehler-Shi 568장(색 이름 채점) · SimpleCube++ 2,234장(조명 추정 각도 오차) |
-| 시제품 | 웹 3모드 — ① 데이터셋(평가 재현) · ② 내 사진 · ③ 실시간 카메라(흰 종이 기준 선택) |
-
-## 1. 문제 — 같은 물체가 조명에 따라 다른 이름으로 불린다
-
-카메라에 찍힌 픽셀 색을 그대로 이름으로 바꾸면, 조명이 바뀔 때 같은 물체도 다른 이름이 나온다.
-따뜻한 실내 조명에서는 흰색 · 회색이 주황 쪽으로, 형광등 · 그늘에서는 파랑 쪽으로 밀린다.
-사람 눈은 이 조명 색을 자동으로 빼고 보지만(색 항상성), 색 이름 앱은 그렇지 못하다.
-
-**색각이상이 있는 사용자는 앱이 틀린 이름을 말해도 스스로 알아챌 수 없다.**
-그래서 "조명이 바뀌어도 이름이 흔들리지 않는가"를 데이터로 확인할 수 있어야 한다.
-
-- 목표: 조명 보정 단계를 하나 추가하고, **조명에 적응하지 않는 고정 보정(기준선)** 대비 정답률이 얼마나 오르는지 **숫자로** 보인다
-- 기준선 정답률: 전체 72.2%, 따뜻한 조명(4,000K 미만)에서는 **49.3%** — 두 번에 한 번꼴로 틀린다
-
-## 2. 방법 — 조명을 추정해서 빼고, 사람이 정한 규칙으로 이름을 붙인다
-
-```mermaid
-flowchart LR
-    A["사진<br/>(선형 RGB)"] --> B["조명 색 추정<br/>Shades of Gray p=3"]
-    B --> C["조명 빼기<br/>÷ 조명 색"]
-    C --> D["카메라 색 변환<br/>카메라별 3×3 행렬"]
-    D --> E["CIELAB<br/>밝기 · 채도 · 색상"]
-    E --> F["11색 이름 규칙<br/>채도 10 미만 → 무채색"]
-    F --> G["색 이름"]
-```
-
-- **조명 추정 3종**: Gray World(장면 평균은 회색) · White Patch(가장 밝은 곳은 흰색) · 그 사이인 **Shades of Gray**(p제곱 평균).
-  p는 보정용 사진에서 각도 오차 중앙값이 가장 작은 값으로 골랐다 → 두 데이터셋 모두 **p = 3** (D11)
-- **이름 규칙** (`src/namer.py`): 학습 없이 사람이 정한 규칙 — 채도 < 10이면 밝기로 검정 · 회색 · 흰색, 아니면 색상 각도 7구간 + 어두운 주황은 갈색.
-  컬러체커 표준 색 24개로만 기준을 정했다 (24/24 정답)
-- **공정한 비교**: 기준선 · 보정 3종 · 상한선(정답 조명을 그대로 쓴 경우)이 **조명 추정만 다르고** 색 변환 · 이름 규칙은 같다.
-  사진 속 컬러체커는 답을 알려 주므로 조명을 추정할 때 가린다
-
-## 3. 검증 — 봉인 평가용 사진으로 단 한 번 채점
-
 <p align="center">
-  <img src="docs/images/result_by_light.png" alt="조명별 색 이름 정답률: 전체 72.2→85.1, 따뜻한 조명 49.3→81.2, 주광 79.7→86.6, 푸른 조명 53.3→74.8" width="760">
+  <img src="https://img.shields.io/badge/Python-3.14-3776AB?logo=python&logoColor=white">
+  <img src="https://img.shields.io/badge/OpenCV-4.14-5C3EE8?logo=opencv&logoColor=white">
+  <img src="https://img.shields.io/badge/NumPy-2.5-013243?logo=numpy&logoColor=white">
+  <img src="https://img.shields.io/badge/colour--science-0.4.7-ff6f00">
+  <img src="https://img.shields.io/badge/FastAPI-웹-009688?logo=fastapi&logoColor=white">
 </p>
 
-| 방법 | 정답률 [95% 구간] | 기준선 대비 [95% 구간] |
+<table align="center">
+  <tr>
+    <td align="center" width="230"><h2>72.2% → 85.1%</h2>색 이름 정답률<br><sub>+12.9%p · 봉인 평가 378장</sub></td>
+    <td align="center" width="230"><h2>49.3% → 81.2%</h2>따뜻한 조명에서<br><sub>+31.9%p · 효과가 가장 큰 곳</sub></td>
+    <td align="center" width="230"><h2>1.68°</h2>조명 추정 오차<br><sub>SimpleCube++ 462장 중앙값</sub></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/images/demo_live.gif" alt="실시간 카메라 시연" width="820"><br>
+  <sub>폰 카메라 실시간 — 푸르게 찍힌 흰 종이: 보정 전 <b>파랑</b> → 자동 보정 <b>회색</b> → 흰 종이 기준 <b>흰색</b> · 빨간 통 <b>진한 빨강</b></sub>
+</p>
+
+## 무엇을 했나
+
+| 단계 | 한 일 | 자세히 |
 |---|---|---|
-| 기준선 (조명에 적응하지 않는 고정 보정) | 72.2% [70.4, 73.9] | — |
-| Gray World | 79.9% [78.2, 81.5] | +7.7%p [+5.3, +10.0] |
-| White Patch | 66.6% [64.1, 69.3] | −5.5%p [−8.4, −2.5] |
-| **Shades of Gray (p = 3)** | **85.1%** [83.5, 86.6] | **+12.9%p** [+10.7, +15.1] |
-| 상한선 (정답 조명) | 95.4% [95.0, 95.9] | +23.3%p [+21.6, +24.9] |
+| 🎯 **문제** | 찍힌 픽셀 색을 그대로 이름으로 바꾸면 조명이 바뀔 때 이름도 바뀐다. 색각이상 사용자는 틀려도 알 수 없다 | [방법과 검증](docs/evaluation.md#문제) |
+| 🔬 **방법** | 학습 없이 **조명 추정**(Gray World · White Patch · Shades of Gray) → 조명 빼기 → **사람이 정한 11색 규칙** | [방법](docs/evaluation.md#방법) |
+| 📊 **검증** | 공개 데이터셋을 보정용/평가용으로 나누고, 채점 규칙을 먼저 고정한 뒤 **평가용은 단 한 번만** 채점 | [결과 리포트](reports/final/gehler_test.md) |
+| 🖥️ **시제품** | FastAPI 웹 — 데이터셋 재현 · 내 사진 · **폰 실시간 카메라**, 틀릴 수 있을 땐 "판단하기 어려워요" | [웹 설명](docs/web.md) |
 
-- **조명이 평균(주광)에서 멀수록 효과가 크다**: 따뜻한 조명 95장 +31.9%p · 푸른 조명 9장 +21.4%p(장수가 적어 참고) · 주광 274장 +6.9%p
-- Shades of Gray가 기준선과 상한선 사이 간격의 **55%**를 메운다. 정답 조명이 의심스러운 사진 2장을 빼도 +12.9%p로 같다 (D9)
-- 보정용 사진의 채점 연습(86.0% vs 74.1%, +11.8%p)과 거의 같아, 보정용에만 맞춰진 결과가 아니다
-- 보조 결과 — SimpleCube++ test 462장 조명 추정 각도 오차 중앙값: Shades of Gray **1.68°** · Gray World 2.21° · White Patch 2.60°
+<p align="center"><img src="docs/images/pipeline.png" alt="처리 흐름: 사진 → 조명 색 추정 → 조명 빼기 → 색 공간 변환 → 11색 이름 규칙" width="900"></p>
 
-**숫자를 믿을 수 있게 한 장치**
+## 결과
 
-| 장치 | 내용 |
+<p align="center"><img src="docs/images/result_by_light.png" alt="조명별 색 이름 정답률" width="760"></p>
+
+| 방법 | 정답률 | 기준선 대비 |
+|---|---|---|
+| 기준선 (고정 보정) | 72.2% | — |
+| Gray World | 79.9% | +7.7%p |
+| White Patch | 66.6% | −5.5%p |
+| **Shades of Gray (p=3)** | **85.1%** | **+12.9%p** [95% 구간 +10.7, +15.1] |
+| 상한선 (정답 조명) | 95.4% | +23.3%p |
+
+<sub>Gehler-Shi 평가용 378장 · 8,240칸, 최종 1회 (2026-10-30). 웹의 ② 내 사진 · ③ 실시간은 체험용이라 정답률을 따로 재지 않았다 · 한계: 실제 색각이상 사용자 시험 전, 약 일곱 번에 한 번 틀림 → [한계](docs/troubleshooting.md#아직-아닌-것-한계)</sub>
+
+## 신경 쓴 점
+
+| 포인트 | 내용 |
 |---|---|
-| 분할 고정 | 보정용 1/3(190장)로만 행렬 · p · 기준선 조명을 정하고, 평가용 2/3(378장)는 마지막까지 열지 않음 (`splits/`) |
-| 미리 정한 주 결과 | 채점 규칙 · 주 결과(전체 24칸 정답률 차이) · 보고 범위를 채점 **전에** 문서로 고정 (D10) |
-| 한 번만 실행 | 리허설로 보정용 숫자를 그대로 재현한 뒤, `--final`은 커밋 안 된 변경이 있거나 이미 실행했으면 멈춤 (D12) |
-| 오차 범위 | 사진 단위 부트스트랩 2,000회 · 95% 구간 · 같은 사진끼리 짝지어 방법 비교 |
-| 정답표 | "가장 가까운 대표색" 자동 방식은 5칸이 틀려서, 24칸 이름을 사람이 근거를 적어 정함 (애매한 8칸은 두 이름 모두 정답, D2) |
+| 🔒 **숫자를 믿을 수 있게** | 평가용 사진은 끝까지 열지 않고, 채점 규칙을 미리 문서로 고정, 최종 실행은 코드 잠금으로 1회만 → [결정 기록](reports/decisions.md) |
+| 👀 **사람이 직접 확인** | 컬러체커 568장을 눈으로 전수 검수 (자동 528 · 수정 40), 정답표 24칸도 근거를 적어 사람이 정함 |
+| 🧪 **스스로 점검하는 코드** | 웹 계산 = 평가 계산 600/600 일치, 가짜 카메라로 49개 자동 점검 → [문제 해결 기록](docs/troubleshooting.md) |
 
-전체 결과: [`reports/final/gehler_test.md`](reports/final/gehler_test.md) · [`reports/final/simplecube_test.md`](reports/final/simplecube_test.md)
+## 폴더 구조
 
-## 4. 시제품 — 웹 화면 (FastAPI)
+| 폴더 | 내용 |
+|---|---|
+| [`src/`](src) | 데이터 확인 → 분할 → 색 변환 → 조명 추정 → 채점 (00 ~ 22 순서) |
+| [`app/`](app) | 웹 (FastAPI) — 계산 · 서버 · 화면 · 자기 점검 · 가짜 카메라 |
+| [`reports/`](reports) | [결정 기록](reports/decisions.md) · [데이터 노트](reports/data_notes.md) · 정답표 · 설정값 |
+| [`reports/final/`](reports/final) | 최종 1회 평가 결과 (봉인) |
+| [`splits/`](splits) | 보정용 190장 / 평가용 378장 목록 |
+| [`docs/`](docs) | README 그림 · 상세 문서 |
+| `data/` · `outputs/` | 데이터셋 원본 · 실행 결과 (깃 제외) |
 
-| 모드 | 사진 | 처리 | 보여 주는 것 |
-|---|---|---|---|
-| ① 데이터셋 (실험 재현) | Gehler 568장 중 고르기 | 평가와 **완전히 같은** 계산 (600 / 600 일치 자기 점검) | 다섯 방법 비교 · 추정 조명 색온도 · 보정 전/후 그림 |
-| ② 내 사진 (체험) | JPG/PNG 올리기 (저장 안 함) | sRGB 되돌리기 → Shades of Gray → sRGB 행렬 | 보정 전 vs 보정 후 이름 · 남은 색 기운 |
-| ③ 실시간 카메라 (체험) | 폰 IP Webcam (같은 와이파이, 초당 약 7~10장) | ②와 같음 + 조명 추정을 장마다 부드럽게 | ②와 같음 + **흰 종이 기준**(선택) |
-
-- **틀릴 수 있을 때는 말한다**: 포화 · 너무 어두움 → "판단하기 어려워요", 이름 경계 근처 → "○○에 가까움", 아주 어두운 색 → "검정일 수도 있어요"
-- **흰 종이 기준** (③, 평가하지 않은 선택 기능): A4 종이로 조명 색과 밝기를 직접 맞춘다.
-  측정을 믿을 수 없으면 거절(포화 · 어두움 · 고르지 않음), 흰색이 아닐 수 있으면 확인(흰색 아님 · 회색 물체 · 화면 대부분이 한 색), 맞춘 뒤 조명이 바뀌면 경고
-- **수식어**: 큰 이름에 "진한 · 연한 · 어두운 · 밝은"을 한 단어만 붙인다 (기본 이름은 평가와 같은 11색 그대로)
-- **"85.1%"는 ① 데이터셋 모드의 숫자다.** ② · ③은 폰이 밝기를 정하고 사진을 가공하므로 체험용이고, 정답률을 따로 재지 않았다
-
-## 5. 문제 해결 기록
-
-| 문제 | 알아낸 방법 | 해결 |
-|---|---|---|
-| OpenCV가 사진을 BGR 순서로 읽음 | R · B를 바꿔 읽으면 각도 오차 중앙값 **15.43°**, 바르게 읽으면 **2.32°** (SimpleCube++ 50장) | 모든 사진 읽기를 공통 모듈 하나(`common.read_rgb`)로 모으고, `python src/common.py`로 순서를 스스로 점검 |
-| 사진 속 컬러체커가 답을 알려 줌 (가리지 않으면 조명 추정이 쉬워짐) | 데이터셋에 컬러체커 위치 좌표가 없음. 모양으로 찾기는 작은 컬러체커에서 대부분 실패 | 정답 색이 칸 크기만큼 모인 자리를 찾는 방식으로 568장 자동 검출 → **사람이 전부 눈으로 검수**(자동 528장 · 손으로 40장). 자동 점수는 30/30이었지만 눈으로 보면 17/30이라 사람 확인을 필수로 함 |
-| 폰에서 검정 키보드가 "파랑" · "분홍"으로 나옴 | 실제 폰 시험: 밝기는 자동 노출 탓(65.3 → 23.7 → 노출 고정 10.9), 노출을 고정해도 채도 12.2가 남음 | 원인이 둘이라 노출 고정 안내 + 아주 어두운 색에 "검정일 수도 있어요" 표시. 이름 규칙은 바꾸지 않음 |
-| 크림 · 베이지 종이를 흰 종이로 맞추면 회색이 "파랑"이 됨 | 가짜 카메라 · 실제 폰 모두 흰색 확인(④)을 통과 | 막을 수 없어 한계로 기록하고, 자동 보정과 답이 다르면 "두 방법이 다르게 봐요"로 알림 |
-| 웹을 고칠 때마다 다른 곳이 깨지지 않는지 확인하기 어려움 | — | 정답을 아는 **가짜 카메라** 그림으로 49개를 점검하는 `app/check_web.py`. 일부러 코드를 망가뜨려 각 점검이 잡는지 확인 (numpy bool 때문에 JSON 응답이 실패하는 버그를 여기서 찾음) |
-
-판단 근거와 과정: [`reports/decisions.md`](reports/decisions.md) · [`reports/data_notes.md`](reports/data_notes.md)
-
-## 6. 아직 아닌 것
-
-- **실제 색각이상 사용자 시험은 하지 않았다** — 정답률은 컬러체커 24칸 기준이다
-- **85.1%는 약 일곱 번에 한 번(14.9%) 틀린다는 뜻**이라 안전이 걸린 판단(전선 색 등)에는 쓰지 않는다. 가장 많이 틀리는 칸은 흰색 · 회색(56~77%, 오답 대부분 "파랑")
-- 한 장면에 조명이 섞이면 보정이 틀릴 수 있다. 야간 사진은 거의 평가하지 못했다 (SimpleCube++에 5장뿐)
-- 폰 카메라의 자동 가공(노출 · 밝기 곡선 · 채도 강조)은 화이트 밸런스 말고는 막지 못한다
-- 크림 · 베이지 종이를 흰 종이로 맞추는 것은 막지 못하고 알림만 한다. 맞춘 뒤 조명이 바뀔 때의 경고(⑥)는 실제 폰에서 아직 확인하지 않았다
-
-## 7. 다음에 할 일
-
-- 섞인 조명 · 야간 사진에서 어디까지 맞는지 한계 분석
-- 남은 실제 폰 확인: ⑥ 조명 바뀜 경고 · 실제 검정 키의 어두운 색 표시 · 베이지 종이 기준에서 무채색 물건
-- 리포트 · 발표 자료 정리
-
-## 8. 실행 방법
-
-### 환경 설정 (WSL Ubuntu 기준)
-
-**Python 3.14 기준.** `requirements.txt`의 버전(numpy 2.5, pandas 3.1, opencv 4.14 등)은 최신 파이썬에서만 설치된다.
-`python3 --version`으로 먼저 확인할 것.
+## 실행
 
 ```bash
-git clone https://github.com/simpson92/TrueHue.git
-cd TrueHue
-python3 -m venv .venv
-source .venv/bin/activate
 pip install -r requirements.txt
+uvicorn app.main:app --port 8000      # → http://localhost:8000
 ```
 
-### 데이터 준비
+설치 · 데이터 받기 · 전체 실행 순서 → [docs/setup.md](docs/setup.md) · 개발 과정 → [docs/dev_log.md](docs/dev_log.md)
 
-#### 1. Gehler-Shi (SFU 재처리판, 약 4.2GB) — 색 이름 채점 (메인)
-
-```bash
-mkdir -p data/gehler_shi && cd data/gehler_shi
-
-# 받기 (aria2c가 있으면 더 빠름: aria2c -x 8 -s 8 -j 5 -c <주소들>)
-wget -c \
-  http://www.cs.sfu.ca/~colour/data2/shi_gehler/png_canon1d.zip \
-  http://www.cs.sfu.ca/~colour/data2/shi_gehler/png_canon5d_1.zip \
-  http://www.cs.sfu.ca/~colour/data2/shi_gehler/png_canon5d_2.zip \
-  http://www.cs.sfu.ca/~colour/data2/shi_gehler/png_canon5d_3.zip \
-  https://www2.cs.sfu.ca/~colour/data/shi_gehler/groundtruth_568.zip
-
-# 압축 검사 → 풀기 → 맥 찌꺼기 삭제
-for f in *.zip; do unzip -tq "$f"; done
-for f in *.zip; do unzip -q "$f"; done
-rm -rf __MACOSX
-
-# PNG를 png/ 폴더 하나로 모으기
-mkdir -p png
-find . -name "*.png" -not -path "./png/*" -exec mv {} png/ \;
-ls png | wc -l          # 568 확인
-rm -rf cs *.zip
-cd ../..
-```
-
-#### 2. SimpleCube++ (약 2GB) — 조명 추정 정확도 평가 (보조)
-
-원래 계획한 Cube+는 배포 링크가 만료되어, 같은 카메라·기준 물체로 만든 후속판으로 대체했다
-(이유: [`reports/decisions.md`](reports/decisions.md) D1).
-
-```bash
-mkdir -p data/simplecube && cd data/simplecube
-wget -c "https://zenodo.org/record/4153431/files/SimpleCube++.zip"
-unzip -tq SimpleCube++.zip && unzip -q SimpleCube++.zip
-find SimpleCube++/train SimpleCube++/test -name "*.png" | wc -l    # 2234 확인
-rm SimpleCube++.zip
-cd ../..
-```
-
-### 웹 화면 · 자기 점검
-
-```bash
-pip install -r requirements.txt          # fastapi · uvicorn · python-multipart 포함
-python app/engine.py                     # 자기 점검 ①: 웹 계산이 평가 계산과 같은지 (✅ 600 / 600, data/ 필요)
-python app/check_web.py                  # 자기 점검 ② · ③: 가짜 카메라로 보정 · 흰 종이 기준 · 안전장치 (✅ 49개, data/ 없이)
-uvicorn app.main:app --port 8000         # 레포 폴더에서 → 브라우저로 http://localhost:8000 (WSL이면 Windows 브라우저)
-python app/fake_ipwebcam.py              # (폰 없이 ③ 시험) 가짜 IP Webcam → ③에 주소 127.0.0.1:8080. --light warm 으로 조명 고정
-```
-
-<details>
-<summary><b>웹 화면 자세히</b> (모드별 처리 · 흰 종이 기준 · API)</summary>
-
-- 포화되거나 너무 어두운 곳은 "판단하기 어려워요", 이름 경계 근처는 "○○에 가까움"을 함께 보여 준다 (D13, 기준은 22).
-  큰 이름에는 밝기 · 채도로 수식어를 붙인다 (예: "진한 빨강" · "연한 주황" — 기본 이름은 평가와 같고 앞에 한 단어만, D13 11/2 보완 15)
-- **"정답률 85.1%"는 ① 데이터셋 모드의 숫자다** — 가공 전 원본 사진에서, 컬러체커 회색 칸으로 밝기를 맞춘 조건. 이름 규칙 · 카메라 행렬 · p · 기준선 조명은 ② · ③도 똑같이 쓰지만, ② · ③은 폰이 밝기를 정하고 사진을 가공하므로 **체험용**이고 정답률을 따로 재지 않았다
-- ③에서 보정 효과를 보려면 IP Webcam의 화이트 밸런스를 자동이 아닌 값(예: 전구색)으로 **고정**한다 — 자동이면 폰이 조명 색을 먼저 빼서 보정 전 · 후가 거의 같다.
-  흰 종이 기준을 쓸 때는 **노출도 고정**한다 (PC 브라우저로 폰 주소 → 수동 센서 제어 → 센서 제어를 수동으로 → ISO · 노출) — 자동이면 종이를 볼 때와 물건을 볼 때 밝기가 달라져 검정 · 회색이 틀어진다.
-  아주 어두운 색(밝기는 검정 범위인데 색이 조금 남음)은 "검정일 수도 있어요"를 함께 보여 준다
-- **흰 종이 기준** (③, 평가하지 않은 기능): 화면 가운데 네모에 A4 복사 용지처럼 새하얀 종이를 비추고 누르면 그 종이로 조명 색과 밝기를 맞춘다.
-  측정을 믿을 수 없으면 거절하고(포화 · 어두움 · 고르지 않음), 흰색이 아닐 수 있으면 확인을 받는다(흰색 아님 · 회색 물체 · 화면 대부분이 한 색). 크림 · 베이지 종이는 막지 못해 "두 방법이 다르게 봐요"로만 알린다 (D13 11/2 보완)
-- ①은 `data/`와 `outputs/gehler_index.csv`(02)가 있어야 한다. 없으면 ② · ③만 쓸 수 있다
-- API: `POST /api/analyze` (`sample` 또는 `upload_id`, `x`, `y`) → `status` · `color_name` · `near_name` · `baseline_name` · `estimated_illuminant` · `explain` · `methods` /
-  `POST /api/live` (`camera`, `x`, `y`, `white`?, `view` = before · after) → 위와 같은 결과 + 그 장의 그림 / `POST /api/live/white` (`camera`, `x`, `y`) → 흰 종이 기준 또는 거절 · 확인 이유
-
-</details>
-
-<details>
-<summary><b>스크립트 실행 순서</b> (src/00 ~ 22)</summary>
-
-| 스크립트 | 하는 일 | 결과 |
-|---|---|---|
-| `src/00_check_data.py` | Gehler-Shi · SimpleCube++ PNG 개수·dtype·값 범위 확인 | 568장 · 1,772장 · 462장, uint16 선형 이미지 |
-| `src/01_inspect_gt.py` | 정답 `.mat` 파일 구조 확인 | 24칸 색 (568×24×3), 조명 정답 (568×3) |
-| `src/02_build_index.py` | 사진별 정보를 한 표로 묶고 정답 조명 검산 | `outputs/gehler_index.csv` (568×78), 오차 0 |
-| `src/03_inspect_nan.py` | 24칸 빈칸(NaN) 패턴·규칙 조사 | 채점 가능 12,428 / 13,632 |
-| `src/04_reference_colors.py` | 컬러체커 24칸 공식 Lab 값, 대표색과 비교 | `reports/patch_reference.csv`, `outputs/patches_preview.png` |
-| `src/05_check_simplecube.py` | SimpleCube++ 장수·정답 짝·라벨·블랙 레벨·포화 확인 | 2,234장, 블랙 레벨 2048, 포화 약 15,303 |
-| `src/06_test_namer.py` | 색 이름 규칙(`src/namer.py`)이 표준 색 24개를 정답표대로 맞히는지 검증 | 24/24 정답, `outputs/namer_hue_chroma.png` |
-| `src/07_make_splits.py` | 보정용 1/3 · 봉인 평가용 2/3 분할 (이미 있으면 덮어쓰지 않음) | `splits/*.txt`, 보정용 190장 / 평가용 378장 |
-| `src/08_fit_color_matrix.py` | 보정용 사진으로 카메라별 3×3 색 변환 행렬 맞추기 | `reports/color_matrix.json`, ΔE 중앙값 5D 2.55 · 1D 5.03 |
-| `src/09_pilot_chart_detect.py` | (시험) 컬러체커 자동 검출 방법 비교 — 정답 색으로 찾기 3차, 처음 보는 30장 중 29장 | `outputs/chart_pilot*/`, 결과는 decisions.md D8 |
-| `src/10_check_camera_white.py` | (점검) 1D 채널 순서 · 흰색 빈칸 원인 · SFU 정답 조명 의심 사진 | 순서 맞음, 9/9장 포화, 의심 3장 (data_notes · D9) |
-| `src/11_detect_charts.py` | 568장 컬러체커 자동 검출(09 3차 방식) → 가림 영역(상자 긴 변 25% 여유) · 30장씩 한눈에 보기 그림 | `outputs/charts/sheet_*.jpg`, `reports/chart_boxes.csv`(처음 한 번만 만듦) |
-| `src/12_fix_charts.py` | (사람) `outputs/charts/to_fix.txt`에 적은 사진만 열어 마우스로 가림 영역 다시 지정 | `reports/chart_boxes.csv` 수정(source = manual), `sheet_fixed.jpg` |
-| `src/13_check_suspect_matrix.py` | (점검) 의심 사진 8D5U5541을 빼고 1D 행렬을 다시 맞춰 ΔE 변화 확인 (D9, 처리 흐름은 안 바꿈) | 같은 28장 ΔE 중앙값 4.83 → 4.73, 평균 5.85 → 5.84 |
-| `src/14_illum_simplecube.py` | Gray World · White Patch를 SimpleCube++ train 1,772장에 돌려 각도 오차 (test는 열지 않음) | `outputs/illum/simplecube_train.csv`, 중앙값 1.91° · 2.44° |
-| `src/15_sog_simplecube.py` | Shades of Gray p = 1~12를 SimpleCube++ train에서 비교 → 중앙값 최소 p (D11) | `reports/illum_params.json`(simplecube), p = 3 · 1.45° |
-| `src/16_illum_gehler.py` | Gehler 보정용 190장에서 가림 영역을 빼고 p = 1~12 비교 → 색 이름 채점에 쓸 p (D11) | `reports/illum_params.json`(gehler), p = 3 · 2.51° |
-| `src/17_check_cct.py` | (점검) 조명 그룹용 색온도 계산 — 우리 행렬(D10 원안) vs Adobe DNG 카메라 행렬, 흑체 궤적 거리 \|Duv\|로 확인 | `reports/illum_params.json`(cct), 1D = EOS-1Ds · 5D = EOS 5D (D10 보완) |
-| `src/18_estimate_gehler.py` | 기준선 조명(카메라별 평균) 저장 + 사진마다 보정 3종 조명 추정. 평가용은 `--final`로 최종 1회만 | `outputs/illum/gehler_est_calib.csv`, `illum_params.json`(baseline) |
-| `src/19_score_calib.py` | 보정용 190장 색 이름 채점 연습 — 정답률 · 일관성 · 칸별 · 회색 칸 채도 · 주 결과 부트스트랩 | `outputs/scores/calib_patches.csv`, SoG − 기준선 +11.8%p |
-| `src/20_final_simplecube.py` | SimpleCube++ 각도 오차 최종 평가 (보조 결과). `--rehearsal` = train, `--final` = test 1회 (D12) | 리허설 1.91 · 1.45 · 2.44 (= 14 · 15), **최종 2.21 · 1.68 · 2.60** → `reports/final/simplecube_test.md` |
-| `src/21_final_gehler.py` | Gehler 색 이름 채점 최종 평가 (주 결과). 조명 추정 + 채점 + D10 보고 범위 · 95% 구간 · 의심 2장 제외 376장. `--rehearsal` = 보정용, `--final` = 평가용 1회 (D12) | 리허설 = 19, **최종 SoG 85.1% vs 기준선 72.2% (+12.9%p)** → `reports/final/gehler_test.md` |
-| `src/22_check_hint.py` | 웹 "○○에 가까움" 표시 기준 — 보정용 SoG 결과에서 경계 여유별 틀린 비율 (D13) | `reports/web_params.json`, 채도 < 7 · 색상 < 3° · 밝기 < 3 |
-
-`src/common.py`(경로·규칙 숫자·데이터 읽기, 사진은 RGB로)와 `src/pipeline.py`(조명 → 노출 → 행렬 → Lab → 이름)는
-다른 스크립트가 불러다 쓰는 부품이라 직접 실행하지 않는다 (`python src/common.py`는 채널 순서 자기 점검).
-`src/namer.py`(이름 규칙), `src/chart.py`(컬러체커 검출 · 가림 영역), `src/illuminant.py`(조명 추정: p=1 Gray World · p=∞ White Patch · 그 사이 Shades of Gray), `src/scoring.py`(채점 · 일관성 · 조명 그룹 · 부트스트랩, `python src/scoring.py`는 자기 점검), `src/hint.py`(웹 "가까운 이름" 표시, 이름 규칙은 안 바꿈)도 부품이다.
-07~13 · 16~19는 02가 만든 `outputs/gehler_index.csv`가 필요하다. Gehler 사진으로 조명을 추정할 때는 `common.load_gehler_image`(포화 + 컬러체커 가림 영역 제외)로만 읽는다.
-19는 17 · 18을 먼저 실행해야 한다 (조명 그룹 행렬 · 추정 조명).
-20 · 21은 `--rehearsal` 또는 `--final`을 붙여야 돈다 (아무것도 없으면 사용법만 출력). `--final`은 커밋 안 된 변경이 있거나 이미 실행했으면 멈춘다 (D12).
-12는 사람이 마우스로 고치는 단계라 `to_fix.txt`에 적은 사진이 없으면 아무것도 하지 않는다.
-
-```bash
-for f in src/[0-9]*.py; do echo "== $f"; python "$f"; done    # 번호가 붙은 스크립트만 순서대로
-```
-
-</details>
-
-## 9. 폴더 구조
-
-```
-TrueHue/
-├── data/          # 데이터셋 원본 (gitignore, 아래 '데이터 준비'로 직접 받기)
-│   ├── gehler_shi/    # png/ 568장 + 정답 .mat
-│   └── simplecube/    # SimpleCube++/ train · test · auxiliary
-├── splits/        # 보정용 / 봉인 평가용 사진 목록
-├── src/           # 전처리·보정·채점 스크립트 (번호 순서대로 실행)
-├── reports/       # 데이터 노트, 결정 기록, 정답표, 비교 리포트
-├── app/           # 웹 화면 (FastAPI: engine.py 계산 · main.py 서버 · static/index.html 화면 · check_web.py 자기 점검 · fake_ipwebcam.py 가짜 카메라, D13)
-├── docs/          # README 그림 (images/) · 결과 그래프 스크립트 make_figures.py (reports/final/ 숫자를 읽어서 그림)
-└── outputs/       # 실행 결과물 (gitignore, 스크립트로 다시 생성)
-```
-
-<details>
-<summary><b>진행 현황</b></summary>
-
-- [x] 레포·환경 구성
-- [x] Gehler-Shi 데이터 받기·확인 (568장)
-- [x] 정답 파일 해석·검산, 사진별 인덱스 표 생성
-- [x] 빈칸(NaN) 패턴 조사 → 채점 가능 문제 12,428개 확정
-- [x] 컬러체커 24칸 공식 Lab 값 확보, 정답표 **초안** 작성
-- [x] SimpleCube++ 받기·확인 (2,234장, Cube+ 대체)
-- [x] 색 이름 규칙 **초안** (표준 색 24개 모두 정답)
-- [x] 보정용 / 봉인 평가용 분할 고정
-- [x] 카메라별 색 변환 행렬 (보정용 사진으로)
-- [x] 중간 점검 · 공통 모듈 정리 (RGB 읽기, 처리 흐름 한 곳으로)
-- [x] 컬러체커 위치 찾는 방법 결정 (정답 색으로 찾기, 처음 보는 30장 중 29장)
-- [x] 중간 점검 데이터 확인 (1D 채널 순서 · 흰색 빈칸 · 정답 조명 의심 사진)
-- [x] 568장 컬러체커 위치 적용 + 사람 검수 (자동 528장 · 손으로 40장 → `reports/chart_boxes.csv`)
-- [x] 정답표·이름 규칙 확정 (2026-10-29 의논, 초안 그대로)
-- [x] 채점 · 보고 규칙 확정 (이름 일관성 지표 · 조명 그룹 · 오차 범위 · 주 결과, D10) · 조명 추정 설정 확정 (D11)
-- [x] 조명 추정 부품(`illuminant.py`) · Gray World · White Patch 구현
-- [x] SimpleCube++ 보정용(train) 각도 오차 — 중앙값 Gray World 1.91° · White Patch 2.44°
-- [x] Shades of Gray p 정하기 — SimpleCube++ · Gehler 모두 **p = 3** (`reports/illum_params.json`)
-- [x] Gehler 보정용 각도 오차 (가림 영역 적용) — 중앙값 Gray World 3.72° · Shades of Gray 2.51° · White Patch 6.93°
-- [x] 조명 그룹 색온도 계산 점검 → Adobe DNG 카메라 행렬로 보완 (D10 보완)
-- [x] 색 이름 채점 연습 (보정용 190장) — 정답률 기준선 74.1% · Gray World 80.2% · White Patch 64.1% · Shades of Gray 86.0% · 상한선 95.8%
-- [x] 최종 평가 준비 — 20 · 21 리허설(보정용으로 15 · 19 숫자 그대로 재현) · 잠금(커밋 안 된 변경 · 두 번째 실행 막음), 절차 D12
-- [x] SimpleCube++ test 462장 각도 오차 최종 평가 (2026-10-30) — 중앙값 Shades of Gray 1.68° · Gray World 2.21° · White Patch 2.60°
-- [x] 기준선 · 보정 3종 · 상한선 색 이름 채점, 평가용 378장 1회 (2026-10-30) — Shades of Gray 85.1% vs 기준선 72.2% (+12.9%p)
-- [x] 웹 화면 설정 (D13) · "가까운 이름" 기준 — 채도 여유 < 7 · 색상 < 3° · 밝기 < 3 (보정용, 22)
-- [x] 웹 화면 (FastAPI, `app/`) — 데이터셋 모드(실험 재현) · 내 사진 모드(체험), 평가 계산과 같은 이름 600 / 600 (`python app/engine.py`)
-- [x] 웹 ③ 실시간 카메라(IP Webcam) · 흰 종이 기준(평가하지 않은 선택 기능) · 보정 전/후 보기 · 가짜 카메라 시험 도구 (D13 11/2 보완)
-- [x] 웹 ② · ③ 자기 점검 (`python app/check_web.py`, `data/` 없이) · 흰 종이 기준 확인 (C1 · C2) · 어두운 색 표시 · 노출 고정 안내 (C3)
-- [x] 실제 폰 시험 (2026-11-02, 노출 · 실제 종이 · 한 가지 색 · 안전장치 기준값 · 깜빡임 → `reports/data_notes.md`). ⑥ 조명 바뀜 경고만 확인 전
-- [x] 표시 개선 — 수식어(진한 · 연한 · 어두운 · 밝은) · 갈색 계열 알림 (D13 11/2 보완 15, 이름 규칙은 그대로)
-- [x] README 개편 (포트폴리오용: 문제 · 방법 · 검증 · 시제품 · 문제 해결 · 한계, 시연 GIF · 결과 그래프)
-- [ ] 리포트 · 발표
-- [ ] (확장) 섞인 조명 · 야간 한계 분석
-
-</details>
-
-<details>
-<summary><b>개발 기록 — 단계별로 알아낸 것</b> (데이터 · 정답표 · 이름 규칙 · 조명 추정 · 채점 연습)</summary>
-
-**Gehler-Shi**
-- **카메라 2종**: Canon 1D 86장(`8D5U…`, 블랙 레벨 0) / Canon 5D 482장(`IMG_…`, 블랙 레벨 129).
-  1D는 사진 크기(원본 4082×2718)로 보면 EOS-1Ds — 색온도 계산에서만 이 구분을 씀 (D10 보완)
-  파일명 정렬 순서가 정답 파일 순서(1D → 5D)와 일치
-- **24칸 평균 색이 이미 제공됨** (블랙 레벨 미적용) → 정답 조명 재계산 오차 0으로 해석 검증
-- **빈칸 1,204칸**: 어둡거나(가장 어두운 채널 < 20) 포화된 칸을 데이터셋이 제외해 둠
-  → 채점 가능 **12,428 / 13,632 (91.2%)**. 대부분 어두운 색이라 한계로 기록. 흰색 빈칸 9장은 모두 포화
-- **정답 조명 의심 3장** (모두 1D): R·G·B가 서로 다른 회색 칸에서 옴 (Hemrit et al. 2018이 지적한 문제)
-  → 표시해 두고 최종 결과를 두 가지로 보고. 평가용에는 2장이라 "평가용 378장" · "의심 2장 제외 376장"
-  → 보정용에 있는 8D5U5541이 1D 행렬에 준 영향은 작음 (13번: 같은 28장 ΔE 중앙값 4.83 → 4.73, 평균 5.85 → 5.84)
-- **컬러체커 위치**: 원본 좌표가 없어 직접 만듦. 자동 검출이 맞은 사진 528 / 568장(93.0%),
-  나머지 40장(검출 실패 2 · 일부만 덮음 · 다른 곳을 덮음 · 그림에서 상자가 안 보임)은 사람이 마우스로 다시 지정 → `reports/chart_boxes.csv`
-
-**정답표**
-- "가장 가까운 대표색"으로 자동으로 정하면 5칸이 틀림 (탁한 색 → 회색) → 사람이 근거를 적어 정함
-- 확실 13 · 거의 확실 3 · 애매 8칸 (애매한 칸은 두 이름 모두 정답). 2026-10-29 **확정**
-
-**SimpleCube++**
-- 블랙 레벨 2048, 포화 약 15,303, 큐브 자리는 0으로 칠해져 있음 → 블랙 레벨을 빼기 **전에** 마스크로 제외
-- 조명이 하나인 장면만 담음 · 야간 5장뿐 → 조명 그룹은 자연광/인공, 실외/실내로 평가
-
-**색 이름 규칙 · 분할 · 색 변환**
-- 규칙: 채도 < 10이면 무채색(밝기로 검정·회색·흰색), 아니면 색상 각도 7구간 + 어두운 주황은 갈색.
-  기준값은 표준 색만 보고 정함 → 24칸 모두 정답. 회색 칸은 채도 여유가 약 9뿐이라 색 있는 조명에 약할 것으로 예상
-- 분할: 정할 값이 약 19개(색 변환 9 × 카메라 2 + Shades of Gray 1)뿐이라 보정용 1/3(4,188칸, 행렬이 가장 적은 1D도 683칸)로 충분, 평가용 2/3(8,240칸)로 최종 점수의 오차 범위를 줄임
-- 색 변환: 진한 색(빨강·파랑·보라·귤색)에서 오차가 큼 → 조명을 완벽히 맞힌 상한선도 100%가 아닐 수 있음
-- 1D 오차가 5D의 약 2배: 채널 순서 문제가 아니라 센서 특성 → 리포트에 카메라별 점수를 따로 표기
-- 비교 설계: 기준선(평균 조명 고정) · 보정 3종 · 상한선(정답 조명)을 같은 색 변환·같은 이름 규칙으로 비교
-
-**조명 추정 첫 결과 (보정용 SimpleCube++ train 1,772장, 최종 숫자 아님)**
-- 각도 오차 중앙값 Gray World **1.91°** · White Patch **2.44°** (평균 3.10° · 5.23°, 나쁜 25% 평균 7.63° · 14.43°, 최대 43° · 53°)
-  → 몇몇 사진에서 크게 틀리는 긴 꼬리가 있어 중앙값을 주로 본다
-- White Patch는 실내 · 인공조명에서 크게 약함: 인공조명(89장) 6.45° vs Gray World 1.48°, 실내(310장) 4.12° vs 1.47°.
-  실외(1,363장)는 둘 다 2.09°
-- 사진별로는 Gray World가 58%에서 더 잘 맞음 → 두 방법의 약점이 달라, 사이 값인 Shades of Gray를 시험할 이유가 된다
-- **Shades of Gray (p = 3)**: SimpleCube++ train 중앙값 **1.45°** (Gray World 1.91° · White Patch 2.44°).
-  인공조명(89장)에서는 1.59°로 Gray World(1.48°)와 비슷하고 White Patch(6.45°)보다 훨씬 나음
-- **Gehler 보정용 190장 (가림 영역 적용)**: 중앙값 Gray World 3.72° · **Shades of Gray(p = 3) 2.51°** · White Patch 6.93°.
-  두 데이터셋 모두 p = 3이 골라졌고, p = 3~5 사이는 중앙값 차이가 0.05° 안팎이라 p 선택에 민감하지 않음
-- Gehler가 SimpleCube++보다 어려움 (2.51° vs 1.45°): 조명이 섞인 장면, 큰 가림 영역(쓸 수 있는 픽셀이 22%까지 줄어든 사진), 정답 조명 문제(D9)가 원인 후보
-
-**색 이름 채점 연습 (보정용 Gehler 190장 · 4,188칸, 최종 숫자 아님)**
-- 정답률: 기준선(고정 보정) 74.1% · Gray World 80.2% · White Patch **64.1%** · **Shades of Gray(p = 3) 86.0%** · 상한선(정답 조명) 95.8%
-- 주 결과 연습 (기준선 대비, 95% 구간): Shades of Gray **+11.8%p [+8.7, +14.9]** · Gray World +6.1%p [+2.9, +9.4] · White Patch −10.1%p [−14.0, −6.1] · 상한선 +21.6%p
-  → Shades of Gray가 기준선과 상한선 사이 간격의 약 55%를 메움. White Patch는 기준선보다 나쁨(각도 오차 6.93° > 기준선 5.31°)
-- **따뜻한 조명(4,000K 미만, 54장)에서 차이가 가장 큼**: 기준선 53.0% → Shades of Gray 79.5% · 상한선 93.0%.
-  주광(134장)은 기준선도 81.9%(고정 보정이 평균 주광에 가까움) → Shades of Gray 88.5%. 푸른 조명은 2장뿐이라 해석 안 함
-- 예측대로 **회색 · 흰색 칸이 가장 많이 틀림** (Shades of Gray 19번 흰색 53% · 20~23번 59~76%, 오답은 대부분 "파랑").
-  회색 칸 채도 중앙값 Shades of Gray 6.0 · Gray World 8.3 · 기준선 11.2 · White Patch 19.7 → "1°당 약 2.4" 예측과 맞음
-- 상한선도 2번(light skin) 52%(오답 "빨강"), 24번 검정 83% → 조명이 아니라 카메라 변환 손실
-
-**채점 규칙 (2026-10-29 확정, 채점 전에 고정)**
-- 지표: 정답률(애매한 칸은 두 이름 모두 정답) + 보조 지표 **이름 일관성**(표준 색에 붙는 이름으로 불린 비율 — 조명 때문에 이름이 흔들리는지)
-- **주 결과**: 보정 3종 각각 vs 기준선, 평가용 전체 24칸 정답률 차이. 나머지는 보조 결과
-- 오차 범위: 평가용 사진 단위 부트스트랩(2,000회, 95%, 카메라별), 방법끼리는 같은 사진으로 짝지어 비교
-- Gehler 조명 그룹: 정답 조명 색온도로 나눔 (4,000K 미만 따뜻함 / 4,000~6,500K 주광 / 6,500K 초과 푸름).
-  색온도는 Adobe DNG 카메라 행렬로 계산 (우리 행렬은 화이트밸런스 뒤 값용이라 조명 색이 초록 쪽으로 밀림, D10 보완)
-- 예측: 회색 칸이 가장 많이 틀릴 것 (조명 추정 1° 오차당 회색 칸 채도 약 2.4, 무채색 기준 10 ≈ 약 4°)
-- 조명 추정: 기준선 평균 조명은 카메라별 · Shades of Gray p는 데이터셋별 보정용으로 · White Patch는 채널별 최댓값
-
-자세한 내용: [`reports/data_notes.md`](reports/data_notes.md) · 판단 이유: [`reports/decisions.md`](reports/decisions.md)
-
-</details>
-
-## 데이터 출처
-
-- Lilong Shi and Brian Funt, "Re-processed Version of the Gehler Color Constancy Dataset of 568 Images,"
-  http://www.cs.sfu.ca/~colour/data/
-- Peter Gehler et al., "Bayesian Color Constancy Revisited," CVPR 2008
-- G. Hemrit et al., "Rehabilitating the ColorChecker Dataset for Illuminant Estimation," CIC 2018 (arXiv 1805.12262)
-- E. Ershov et al., "The Cube++ Illumination Estimation Dataset," IEEE Access 2020 —
-  SimpleCube++, https://github.com/Visillect/CubePlusPlus (CC BY 4.0)
-- ColorChecker 공식 값: colour-science 라이브러리 (`ColorChecker24 - Before November 2014`)
-- 11색 대표색: xkcd Color Survey
+<sub>데이터: Gehler-Shi (Shi & Funt 재처리판) · SimpleCube++ (Ershov et al., CC BY 4.0) — 출처 전체는 [setup.md](docs/setup.md#데이터-출처)</sub>

@@ -1,0 +1,72 @@
+<!doctype html>
+<!-- docs/figures/pipeline.html — README 처리 흐름 그림의 원본.
+     다시 만들기: google-chrome --headless=new --hide-scrollbars --force-device-scale-factor=2 \
+       --window-size=1200,330 --screenshot=docs/images/pipeline.png docs/figures/pipeline.html
+     색 견본은 README 시연 GIF(푸르게 찍힌 흰 종이)의 실제 화면 값을 옮긴 예시 -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1200px; height: 330px; background: #fcfcfb; font-family: "Noto Sans CJK KR", "Malgun Gothic", sans-serif; color: #0b0b0b; }
+  .wrap { padding: 26px 30px; }
+  .title { font-size: 19px; font-weight: 700; margin-bottom: 18px; }
+  .title span { font-weight: 400; color: #52514e; font-size: 15px; margin-left: 8px; }
+  .row { display: flex; align-items: stretch; gap: 0; }
+  .card { flex: 1; background: #fff; border: 1.5px solid #e6e5e0; border-radius: 14px; padding: 16px 14px 14px; text-align: center; }
+  .card.key { border-color: #2a78d6; box-shadow: 0 0 0 3px #2a78d61a; }
+  .step { font-size: 12px; font-weight: 700; color: #2a78d6; letter-spacing: .5px; }
+  .name { font-size: 17px; font-weight: 700; margin: 4px 0 10px; }
+  .sw { width: 64px; height: 64px; border-radius: 10px; margin: 0 auto 10px; border: 1px solid #0000001a; }
+  .desc { font-size: 13px; color: #52514e; line-height: 1.45; }
+  .tag { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: #f1f0ec; }
+  .tag.bad { background: #fde7e3; color: #b3361a; }
+  .tag.good { background: #e3efff; color: #1d5fb0; }
+  .arrow { width: 34px; display: flex; align-items: center; justify-content: center; color: #9c9a92; font-size: 26px; }
+  .icon { font-size: 30px; height: 64px; line-height: 64px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="title">처리 흐름 <span>예: 형광등 아래 푸르게 찍힌 흰 종이</span></div>
+  <div class="row">
+    <div class="card">
+      <div class="step">INPUT</div>
+      <div class="name">사진 한 점</div>
+      <div class="sw" style="background:#4fb3e3"></div>
+      <div class="desc">조명 색이 섞인 그대로</div>
+      <div class="tag bad">그대로 부르면 "파랑"</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="card key">
+      <div class="step">STEP 1</div>
+      <div class="name">조명 색 추정</div>
+      <div class="sw" style="background:#3f9fdc"></div>
+      <div class="desc">장면 전체로 조명 색을 추정<br><b>Shades of Gray</b> (p = 3)</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="card key">
+      <div class="step">STEP 2</div>
+      <div class="name">조명 빼기</div>
+      <div class="sw" style="background:#a9a9a6"></div>
+      <div class="desc">추정한 조명 색으로 나눠<br>물체 본래 색만 남김</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="card">
+      <div class="step">STEP 3</div>
+      <div class="name">색 공간 변환</div>
+      <div class="icon">L*a*b*</div>
+      <div class="desc">카메라별 3×3 행렬 → CIELAB<br>밝기 · 채도 · 색상</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="card">
+      <div class="step">STEP 4</div>
+      <div class="name">11색 이름 규칙</div>
+      <div class="icon">🎨</div>
+      <div class="desc">사람이 정한 규칙 (학습 없음)<br>채도 10 미만 → 무채색</div>
+      <div class="tag good">"회색"</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
