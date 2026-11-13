@@ -4,7 +4,7 @@
 
 <p align="center">
   <b>조명 색을 먼저 추정해 지운 뒤 색 이름을 붙이는 감별기</b><br>
-  <sub>KH정보교육원 교과 9 머신비전 미니 프로젝트 · 1조 심준형 · 김하민 · 2026.10.27 ~</sub>
+  <sub>KH정보교육원 <a href="https://github.com/simpson92/KH_Project_Subject9">교과 9 머신비전(규칙 기반 영상처리)</a> 10일 과정을 바탕으로 만든 미니 프로젝트 · 1조 심준형 · 김하민 · 2026.10.27 ~</sub>
 </p>
 
 <p align="center">
@@ -38,6 +38,22 @@
 | 🖥️ **시제품** | FastAPI 웹 — 데이터셋 재현 · 내 사진 · **폰 실시간 카메라**, 틀릴 수 있을 땐 "판단하기 어려워요" | [웹 설명](docs/web.md) |
 
 <p align="center"><img src="docs/images/pipeline.png" alt="처리 흐름: 사진 → 조명 색 추정 → 조명 빼기 → 색 공간 변환 → 11색 이름 규칙" width="900"></p>
+
+## 교과 9에서 이어진 것
+
+> **출발점** — 교과 9 실습(2일차 흰 뚜껑 검사)에서 직접 적은 한계: *"카메라 화이트밸런스가 바뀌면 실패할 수 있다"* ([실습 기록](https://github.com/simpson92/KH_Project_Subject9/blob/main/reports/day02_preprocess_reason.md))<br>
+> → 색으로 판단하는 규칙이 조명에 약하다는 이 한계를 정면으로 푼 것이 TrueHue
+
+| 교과 9 | 배운 것 | TrueHue에서 쓴 곳 |
+|---|---|---|
+| 1일차 ROI · IP Webcam | 검사 영역 지정, 스마트폰 카메라 연결 | 클릭 지점 11×11 평균 · 흰 종이 네모 · 컬러체커 가림 영역 · 실시간 카메라 |
+| 2일차 색 공간 · 감마 | BGR · HSV · Lab, 감마 | BGR → RGB 순서 점검 · sRGB 감마를 되돌려 선형으로 · CIELAB |
+| 3일차 Feature → Rule (+ FastAPI 확장) | 사람이 기준을 설계해 판정 · IP Webcam + FastAPI 실시간 | 학습 없는 11색 이름 규칙 · 웹 ③ 실시간 모드 |
+| 5일차 Calibration → Freeze → Test | 보정용으로 기준을 정해 고정, Test는 한 번 | 보정용 190장 / 평가용 378장 · 리허설 뒤 `--final` 1회 잠금 |
+| 9일차 MLOps · Drift | 결과 덮어쓰지 않기, Test 보고 기준 안 바꾸기 | `reports/final/` 고치지 않음 · 결과에 커밋 해시 · 조명 바뀜 경고 |
+| 10일차 FastAPI · JSON · Web | 검사 로직 → API → 웹, Dictionary ≠ JSON | FastAPI 웹 3모드 · JSON 응답 자기 점검 · 폰 · PC 브라우저 |
+
+**교과 9 위에 새로 공부해 더한 것**: 조명 추정 3종(Gray World · White Patch · Shades of Gray) · 공개 데이터셋 2개로 자동 채점 · 카메라 색 변환 행렬 · 부트스트랩 오차 범위
 
 ## 결과
 
