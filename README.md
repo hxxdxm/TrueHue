@@ -16,9 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=0-1">
-    <img src="https://img.shields.io/badge/Figma-포트폴리오_보기-F24E1E?logo=figma&logoColor=white" alt="Figma 포트폴리오 보기">
-  </a>
+  <a href="https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=0-1"><img src="https://img.shields.io/badge/📘_포트폴리오_·_기술_문서-Figma에서_보기-F24E1E?style=for-the-badge&logo=figma&logoColor=white" alt="Figma 포트폴리오 · 기술 문서 바로가기"></a>
 </p>
 
 <table align="center">
@@ -44,6 +42,24 @@
 | 🖥️ **시제품** | FastAPI 웹 — 데이터셋 재현 · 내 사진 · **폰 실시간 카메라**, 틀릴 수 있을 땐 "판단하기 어려워요" | [웹 설명](docs/web.md) |
 
 <p align="center"><img src="docs/images/pipeline.png" alt="처리 흐름: 사진 → 조명 색 추정 → 조명 빼기 → 색 공간 변환 → 11색 이름 규칙" width="900"></p>
+
+## 포트폴리오 · 기술 문서 (Figma)
+
+프로젝트 전체를 피그마에 정리했다 — 처리 흐름 · 시스템 구성도 · 아키텍처 · 평가 설계 · 웹 시연 · 문제 해결. **그림을 누르면 피그마가 열린다.**
+
+<p align="center">
+  <a href="https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=0-1"><img src="docs/images/figma_preview.png" alt="피그마 포트폴리오 미리보기 — 시스템 구성도 · 아키텍처 · 최종 평가 · 웹 시연" width="820"></a>
+</p>
+
+| 바로가기 | 담긴 내용 |
+|---|---|
+| 🧭 [프로젝트 개요 · 처리 흐름](https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=3-2) | 색 이름 처리 흐름 ①~⑥ · 11색 이름 규칙 · 웹 구성 |
+| 🗺️ [시스템 구성도](https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=18-6) · [아키텍처](https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=18-3) | 어디에서 무엇이 돌아가나 · 실험 파이프라인과 웹이 같은 부품을 쓰는 구조 |
+| 📊 [기술 완성도 ① 최종 평가](https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=4-2) | 5가지 방법 정답률 · 주 결과 +12.9%p · 조명 그룹별 · 조명 추정 각도 오차 |
+| ⚖️ [기술 완성도 ② 공정한 평가 설계](https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=5-2) | 평가용 봉인 · 사람이 정한 정답표 · 부트스트랩 · 예측하고 확인하기 · 컬러체커 검수 |
+| 🎥 [기술 완성도 ③ 웹 · 실시간 카메라](https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=6-2) | 시연 장면 4개 · 판단 어려움 · 안전장치 ①~⑥ · 실제 폰 결과 |
+| 🛠️ [문제 해결 · 한계](https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=7-2) | 부딪힌 문제 4개와 해결 · 알고 있는 한계 · 다음에 할 일 |
+| 👤 김하민 [프로필](https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=1-2) · [담당 일](https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=2-2) · 심준형 [프로필](https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=10-2) · [담당 일](https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=11-2) | 팀원별 일하는 방식 · 담당 주요 일 |
 
 ## 교과 9에서 이어진 것
 
