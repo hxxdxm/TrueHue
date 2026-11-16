@@ -15,6 +15,12 @@
   <img src="https://img.shields.io/badge/FastAPI-웹-009688?logo=fastapi&logoColor=white">
 </p>
 
+<p align="center">
+  <a href="https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=0-1">
+    <img src="https://img.shields.io/badge/Figma-포트폴리오_보기-F24E1E?logo=figma&logoColor=white" alt="Figma 포트폴리오 보기">
+  </a>
+</p>
+
 <table align="center">
   <tr>
     <td align="center" width="230"><h2>72.2% → 85.1%</h2>색 이름 정답률<br><sub>+12.9%p · 봉인 평가 378장</sub></td>
