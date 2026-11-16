@@ -4,7 +4,8 @@
 
 <p align="center">
   <b>조명 색을 먼저 추정해 지운 뒤 색 이름을 붙이는 감별기</b><br>
-  <sub>KH정보교육원 <a href="https://github.com/simpson92/KH_Project_Subject9">교과 9 머신비전(규칙 기반 영상처리)</a> 10일 과정을 바탕으로 만든 미니 프로젝트 · 1조 심준형 · 김하민 · 2026.10.27 ~</sub>
+  <sub>KH정보교육원 <a href="https://github.com/simpson92/KH_Project_Subject9">교과 9 머신비전(규칙 기반 영상처리)</a> 10일 과정을 바탕으로 만든 미니 프로젝트 · 1조 심준형 · 김하민 · 2026.10.27 ~</sub><br>
+  <sub><b>심준형</b> 기획 · 구현 · 실험 · 웹 시제품 · 문서 &nbsp;|&nbsp; <b>김하민</b> 평가 기준(정답표 · 이름 규칙) 공동 결정 · 평가 절차와 웹 대응 검토</sub>
 </p>
 
 <p align="center">
