@@ -62,7 +62,13 @@
 | 🛠️ [문제 해결 · 한계](https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=7-2) | 부딪힌 문제 4개와 해결 · 알고 있는 한계 · 다음에 할 일 |
 | 👤 김하민 [프로필](https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=1-2) · [담당 일](https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=2-2) · 심준형 [프로필](https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=10-2) · [담당 일](https://www.figma.com/design/hzU3DnxlzOEoPqqOxaFbez/TrueHue-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4?node-id=11-2) | 팀원별 일하는 방식 · 담당 주요 일 |
 
-## 교과 9에서 이어진 것
+## 앞 교과에서 이어진 것
+
+교과 9의 **영상처리 기술**에 교과 7 · 8에서 익힌 **데이터 · 평가 습관**을 더해 만들었습니다. 눌러서 펼쳐 보세요.
+
+<details>
+<summary><b>교과 9 머신비전</b> — 출발점이 된 실습 한계 · 가져다 쓴 기술 6가지</summary>
+<br>
 
 > **출발점** — 교과 9 실습(2일차 흰 뚜껑 검사)에서 직접 적은 한계: *"카메라 화이트밸런스가 바뀌면 실패할 수 있다"* ([실습 기록](https://github.com/simpson92/KH_Project_Subject9/blob/main/reports/day02_preprocess_reason.md))<br>
 > → 색으로 판단하는 규칙이 조명에 약하다는 이 한계를 정면으로 푼 것이 TrueHue
@@ -77,6 +83,29 @@
 | 10일차 FastAPI · JSON · Web | 검사 로직 → API → 웹, Dictionary ≠ JSON | FastAPI 웹 3모드 · JSON 응답 자기 점검 · 폰 · PC 브라우저 |
 
 **교과 9 위에 새로 공부해 더한 것**: 조명 추정 3종(Gray World · White Patch · Shades of Gray) · 공개 데이터셋 2개로 자동 채점 · 카메라 색 변환 행렬 · 부트스트랩 오차 범위
+
+</details>
+
+<details>
+<summary><b>교과 7 · 8 라벨 검수 · 이물 검출</b> — 그대로 가져온 데이터 · 평가 습관 7가지</summary>
+<br>
+
+> **교과 7 · 8** — 조각김치 900장으로 라벨 검수 도구(교과 7)를 만들고, 그 정답지로 YOLO11n 검출 모델(교과 8)을 학습 · 평가한 1조 5명 팀 프로젝트 ([레포](https://github.com/simpson92/KH_Project))<br>
+> 심준형: 교과 7 QA / Test · 교과 8 Data / QA · Training &nbsp;|&nbsp; 김하민: 교과 7 Docs / Guide · 교과 8 Inference / Document
+
+| 교과 7 · 8에서 한 일 | 익힌 습관 | TrueHue에서 쓴 곳 |
+|---|---|---|
+| 교과 7 1차 검수 → 교차검수 · REVIEW 사유 필수 | 정답은 사람이 정하고 근거를 남긴다 | 24칸 정답표를 사람이 그림 · 색상 각도 · 채도를 보고 근거와 함께 정함, 사람마다 갈리는 8칸은 두 이름 모두 정답 (D2) |
+| 교과 8 Auto Label → Human Review | 자동 결과는 사람이 다시 본다 | 컬러체커 위치를 자동으로 찾은 뒤 568장 전부 눈으로 확인 → 528장 그대로 · 40장 손으로 다시 지정 (D8) |
+| 교과 8 Audit 기대값 · Fixture(버그를 심은 작은 데이터) | 결과를 보기 전에 기대값을 적고, 검사기부터 시험한다 | 표준 24색을 넣으면 24 / 24가 나와야 규칙을 믿음 · 채점 전 "회색 칸이 가장 많이 틀릴 것" 예측 (D2 · D4) · 가짜 카메라로 웹 49개 자기 점검 |
+| 교과 8 Split → Freeze · 지문 | 평가용은 처음에 나눠 봉인한다 | 카메라별 같은 비율 · seed 42로 보정용 190장 / 평가용 378장 고정 (`splits/`, D5) |
+| 교과 8 Baseline → 변수 1개만 바꾼 개선 실험 | 한 번에 하나만 바꿔 비교한다 | 고정 보정(기준선)과 조명 추정 3종은 ① 조명 추정 단계만 다름 → 차이가 조명 추정 때문이라고 말할 수 있음 |
+| 교과 8 Frozen Test 1회 잠금 | Test는 한 번, 결과를 보고 고치지 않는다 | 리허설 뒤 `--final` 1회 · 결과 파일이 있으면 멈춤 · 결과에 커밋 해시 기록 (D12) |
+| 교과 8 Val 라벨 오류 2건은 고치지 않고 기록 · Test 하락 원인 분해 | 문제를 숨기지 않고 표시한 채 보고한다 | 정답 조명이 의심스러운 3장을 표시하고 결과를 두 가지로 보고 (D9) · 조명 그룹별로 나눠 봄 |
+
+<sub>D1 ~ D13 = [결정 기록 `reports/decisions.md`](reports/decisions.md)</sub>
+
+</details>
 
 ## 결과
 
